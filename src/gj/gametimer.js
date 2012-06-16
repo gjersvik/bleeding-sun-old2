@@ -1,22 +1,25 @@
-(function ($, g) {
+(function () {
     'use strict';
-    g.gameTimer = function (timeout,animeTimeout) {
+    gj.gameTimer = function (requestAnimationFrame) {
         var that = {},
             call_tick = $.Callbacks(''),
             call_render = $.Callbacks(''),
+            call_fps= $.Callbacks(''),
             running = false,
             time = 0,
             tick_frames = 0,
-            render_frames = 0;
+            render_frames = 0,
+            fps_tick = 0,
+            fps_render = 0;
 
         function tick() {
             if (!running) {
                 return;
             }
-            call_tick.fire(tick_frames);
+            call_tick.fire();
             tick_frames += 1;
             time += 17;
-            timeout(tick, time - Date.now());
+            setTimeout(tick, time - Date.now());
         }
 
         function render() {
@@ -25,9 +28,20 @@
             }
             call_render.fire();
             render_frames += 1;
-            animeTimeout(render);
+            requestAnimationFrame(render);
         }
 
+        function fps() {
+            if (!running) {
+                return;
+            }
+            setTimeout(fps, 1000);
+            fps_tick = tick_frames;
+            tick_frames = 0;
+            fps_render = tick_frames;
+            render_frames = 0;
+            call_fps.fire();
+        }
 
         that.start = function () {
             if (running) {
@@ -36,7 +50,8 @@
             running = true;
             time = Date.now();
             tick();
-            animeTimeout(render);
+            fps();
+            requestAnimationFrame(render);
         };
 
         that.stop = function () {
@@ -51,37 +66,13 @@
         that.removeTick = call_tick.remove;
         that.addRender = call_render.add;
         that.removeRender = call_render.remove;
+        that.addFps = call_render.add;
+        that.addFps = call_render.remove;
 
         return that;
     };
 
-    g.gameTimerFactory = function () {
-        return g.gameTimer(window.setTimeout, window.requestAnimationFrame);
+    gj.gameTimerFactory = function () {
+        return gj.gameTimer(requestAnimationFrame);
     };
-}(jQuery,gj));
-
-
-        function fps() {
-            fpstick = tickframes;
-            tickframes = 0;
-            fpsrender = renderframes;
-            renderframes = 0;
-            that.fire('fps');
-        }
-
-        Y.AnimLoop.on('beforedraw', render);
-        setInterval(fps, 1000);
-
-        that.isRunning = function () {
-            return timeout !== null;
-        };
-        that.getTickFps = function () {
-            return fpstick;
-        };
-        that.getRenderFps = function () {
-            return fpsrender;
-        };
-    };
-}, '0.1', {
-    requires: ['event', 'gallery-animloop']
-});
+}());
